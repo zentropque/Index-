@@ -1,0 +1,261 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>For My Turquoise Wife -- Anya 🌸</title>
+
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  overflow:hidden;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto;
+  color:white;
+  background:
+    radial-gradient(circle at 20% 20%, #1a2a6c 0%, transparent 50%),
+    radial-gradient(circle at 80% 10%, #b21f1f 0%, transparent 50%),
+    radial-gradient(circle at 50% 90%, #fdbb2d 0%, transparent 50%),
+    #050510;
+}
+
+canvas{ position:fixed; inset:0; }
+
+.container{
+  position:absolute; inset:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.card{
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(14px);
+  padding:28px;
+  border-radius:20px;
+  max-width:520px;
+  width:90%;
+  border:1px solid rgba(255,255,255,0.15);
+  box-shadow:0 30px 80px rgba(0,0,0,0.6);
+  text-align:center;
+}
+
+.title{ font-size:28px; margin-bottom:16px; }
+
+.message{
+  font-size:17px;
+  line-height:1.6;
+  opacity:0.95;
+  min-height:140px;
+  margin-bottom:18px;
+}
+
+.highlight{
+  color:#ffd6f9;
+  font-weight:700;
+  text-shadow:0 0 8px rgba(255,200,255,0.6);
+}
+
+button{
+  background: rgba(255,255,255,0.15);
+  border:1px solid rgba(255,255,255,0.25);
+  color:white;
+  padding:10px 18px;
+  border-radius:12px;
+  cursor:pointer;
+  font-size:15px;
+  transition:0.25s;
+}
+
+button:hover{
+  background: rgba(255,255,255,0.25);
+  transform:scale(1.05);
+}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="container">
+  <div class="card">
+    <div class="title">For My Turquoise Wife -- Anya 🌸</div>
+    <div class="message" id="typewriter"></div>
+    <button onclick="growMoreFlowers()">Grow More Flowers 🌸</button>
+  </div>
+</div>
+
+<script>
+// ===== MESSAGE =====
+const lines = [
+  "Anya, thank you for coming into my life.",
+  "You are my first and last love.",
+  "I made this for you, because you matter to me more than words can explain.",
+  "",
+  "Shaadi toh apse hi karunga jo bhi hojaye ❤️"
+];
+
+// ===== TYPEWRITER =====
+let charIndex=0;
+let lineIndex=0;
+const speed=40;
+
+function type(){
+  if(lineIndex >= lines.length) return;
+  const el = document.getElementById("typewriter");
+
+  if(charIndex < lines[lineIndex].length){
+    const ch = lines[lineIndex][charIndex];
+    if(lineIndex === lines.length-1){
+      el.innerHTML += `<span class="highlight">${ch}</span>`;
+    } else {
+      el.innerHTML += ch;
+    }
+    charIndex++;
+    setTimeout(type, speed);
+  } else {
+    el.innerHTML += "<br><br>";
+    lineIndex++;
+    charIndex=0;
+    setTimeout(type, 400);
+  }
+}
+type();
+
+// ===== FLOWER SYSTEM =====
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+
+let w,h;
+function resize(){
+  w=canvas.width=window.innerWidth;
+  h=canvas.height=window.innerHeight;
+}
+resize();
+window.onresize=resize;
+
+const flowers=[];
+function rand(a,b){ return a+Math.random()*(b-a); }
+
+let fadeAll = 0;
+let fadeStrength = 0.03;
+
+class Flower{
+  constructor(x,y){
+    this.x=x;
+    this.y=y;
+    this.size=rand(8,18);
+    this.life=0;
+    this.max=rand(260,520);
+    this.petals=Math.floor(rand(6,10));
+    this.color=`hsl(${rand(300,360)},80%,70%)`;
+
+    this.vx = rand(-0.25, 0.25);
+    this.vy = rand(-0.45, -0.15);
+    this.wobble = rand(0.6, 1.6);
+    this.wobblePhase = rand(0, Math.PI*2);
+
+    this.alpha = 1;
+  }
+
+  step(){
+    this.life++;
+    this.wobblePhase += 0.02;
+    this.x += (this.vx + Math.sin(this.wobblePhase)*0.15/this.wobble);
+    this.y += this.vy;
+
+    if(this.x < -50) this.x = w + 50;
+    if(this.x > w + 50) this.x = -50;
+
+    if(fadeAll){
+      this.alpha -= fadeStrength;
+      if(this.alpha < 0) this.alpha = 0;
+    } else {
+      const natural = 1 - (this.life / this.max);
+      this.alpha = Math.min(this.alpha, natural);
+    }
+  }
+
+  draw(){
+    if(this.alpha <= 0) return;
+
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.translate(this.x,this.y);
+
+    for(let i=0;i<this.petals;i++){
+      ctx.rotate(Math.PI*2/this.petals);
+      ctx.fillStyle=this.color;
+      ctx.beginPath();
+      ctx.ellipse(this.size,0,this.size*0.6,this.size*0.3,0,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle="#ffd700";
+    ctx.beginPath();
+    ctx.arc(0,0,this.size*0.3,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  dead(){
+    return this.alpha <= 0 || this.life > this.max || this.y < -120;
+  }
+}
+
+function plant(x,y,count=1){
+  for(let i=0;i<count;i++){
+    flowers.push(new Flower(x+rand(-20,20), y+rand(-20,20)));
+  }
+}
+
+window.onclick=(e)=>{
+  fadeAll = 0;
+  plant(e.clientX, e.clientY, 8);
+};
+
+function growMoreFlowers(){
+  fadeAll = 1;
+  setTimeout(()=>{
+    for(let i=flowers.length-1;i>=0;i--){
+      if(flowers[i].alpha <= 0.2) flowers.splice(i,1);
+    }
+    for(let i=0;i<28;i++){
+      plant(rand(40, w-40), rand(80, h-80), 1);
+    }
+    fadeAll = 0;
+  }, 700);
+}
+
+function animate(){
+  ctx.fillStyle="rgba(0,0,0,0.14)";
+  ctx.fillRect(0,0,w,h);
+
+  for(let i=0;i<flowers.length;i++){
+    flowers[i].step();
+    flowers[i].draw();
+  }
+
+  for(let i=flowers.length-1;i>=0;i--){
+    if(flowers[i].dead()){
+      flowers.splice(i,1);
+    }
+  }
+
+  if(flowers.length < 60 && Math.random() < 0.10){
+    plant(rand(40, w-40), rand(60, h-60), 1);
+  }
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+
+for(let i=0;i<22;i++){
+  plant(rand(40, w-40), rand(80, h-80), 1);
+}
+</script>
+
+</body>
+</html>
